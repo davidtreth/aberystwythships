@@ -23,17 +23,22 @@ the names of the subdirectories, and files, and the details of crew:
 "Name", "Birth Year", "Age", "Birthplace", "Date Joined", "Port Joined", "Capacity", "Date Left", "Port Left"
 
 """
-
+from __future__ import print_function
 import glob
 import os
 import sys, imp
 import datetime
+import time
+
+import argparse
 imp.reload(sys)
 if sys.version_info[0] < 3:
     sys.setdefaultencoding('utf-8')
 from openpyxl import load_workbook
 from operator import itemgetter
+from collections import defaultdict
 
+shipdict = defaultdict(dict)
 
 transcriptdir = glob.glob("ABERSHIP_transcription*")
 
@@ -74,6 +79,8 @@ for s in seriesdirssorted:
         print("\n")
         print(f[0])
         os.chdir(f[0])
+        shipdict[f[1]] = defaultdict(dict)
+        shipdict[f[1]]["Vessel Names2"] = []
         # find the Excel files, and sort by number
         filelist = glob.glob("File*.xlsx")  
         totalNfiles += len(filelist)
@@ -84,6 +91,7 @@ for s in seriesdirssorted:
             # loop through the Excel files
             print("\n")
             print(i[0])
+            shipdict[f[1]][i[1]] = defaultdict(dict)
             wb = load_workbook(filename=i[0])
             sheets = wb.get_sheet_names()
             for sheet in sheets:
@@ -92,6 +100,15 @@ for s in seriesdirssorted:
                 sheet_ranges = wb[sheet]
                 # cell F2 contains vessel name, F4 its number and F6 the port of registry
                 shipname = sheet_ranges['F2'].value
+                # assume the vessel name is the same for each series
+                # should be, I think.
+                # take the first one it finds for each series
+                try:
+                    assert(len(shipdict[f[1]]['Vessel Name'])>0)
+                except:
+                    shipdict[f[1]]["Vessel Name"] = shipname
+                # add to list of all ship names in each series
+                shipdict[f[1]]["Vessel Names2"].append(shipname)
                 shipnum = sheet_ranges['F4'].value
                 shipport = sheet_ranges['F6'].value
                 print("Ship name: {n}. Official Number: {n2} Port of registry: {p}\n".format(n=shipname, n2=shipnum, p=shipport))
@@ -140,5 +157,28 @@ for s in seriesdirssorted:
             #print("Sheets: {sh}".format(sh=sheets))
         os.chdir("..")
     os.chdir("..")
-    
+#print(shipdict)    
+shipnames = [shipdict[s]["Vessel Name"] for s in shipdict]
+#shipnames.sort()
+
+print("Number of vessels = {n}".format(n=len(shipnames)))
+print("\nVessel names: ")
+#for s in shipnames:
+#    print(s, end=", ")
+
+# now checks whether all instances of the ship name
+# are the same as that of the first one
+shipnames2 = [shipdict[s]["Vessel Names2"] for s in shipdict]
+zshipnames = list(zip(shipnames, shipnames2))
+for z in zshipnames:
+    print(z[0])
+    for s2 in z[1]:
+        try:
+            assert(z[0] == s2)
+        except:
+            print("ship name conflict")
+            print(z[0], s2)
+            print("\n")
+            #time.sleep(5)    
+
 print("\nTotal number of Excel files = {t}".format(t=totalNfiles))
