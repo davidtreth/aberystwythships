@@ -34,7 +34,9 @@ redirecting to the text file aberships_all.txt
 The command line can then be used to, for example find names connected with a
 place:
 
-grep Truro aberships_all.txt 
+$ grep Truro aberships_all.txt
+[not all output shown]
+
 William Clarke                	blk        42      	[Truro]             	1867-04-14  Swansea              Engineer            	1867-05-02           Liverpool
 John Davies                   	blk        37      	Aberaeron           	1873-01-21  Cardiff              Boatswain           	1873-04-18           Truro
 John Waters                   	blk        52      	St.Davids           	1873-01-21  Cardiff              Able Seaman         	1873-04-18           Truro
