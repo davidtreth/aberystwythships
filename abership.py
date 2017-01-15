@@ -130,6 +130,7 @@ def getVesselsInfo(verbose=False):
                             shipnum = int(shipnum)
                         except:
                             pass
+
                         shipdict[f[1]]["VesselIDs"].append(shipnum)
                         
                     shipdict[f[1]][i[1]][sheet]["Crewlist"] = []
@@ -243,9 +244,65 @@ def checkNames(shipdict):
                 print("ship name conflict")
                 print(z[0], s2)
                 #time.sleep(5)
+
+def str2Date(datestr, assumefirstday=True, verbose=False, acceptguesses=False):
+    datestr = datestr.strip()
+    datestr = datestr.replace("/","-")
+    if acceptguesses:
+        datestr = datestr.replace("[","")
+        datestr = datestr.replace("]","")
+    if len(datestr.split("-")) == 2:
+        if assumefirstday:            
+            d = 1
+        else:
+            d = 28
+        try:
+            y, m = [int(i) for i in datestr.split("-")]
+        except:
+            pass
+    elif len(datestr.split("-")) == 3:
+        try:
+            y, m, d = [int(i) for i in datestr.split("-")]
+        except:
+            pass
+    else:
+        pass
+    try:
+        outputdate = datetime.date(y,m,d)
+    except:
+        if verbose:
+            print("date that cannot be processed: {d}".format(d=datestr))
+            #time.sleep(1)
+        if assumefirstday:            
+            y, m, d = 1800, 1, 1
+        else:
+            y, m, d = 2000, 1, 1
+        outputdate= datetime.date(y, m, d)
+    return outputdate
   
-
-
+def findDates(shipdict, verbose=False):
+    for s in shipdict:
+        if verbose:
+            print("Vessel Name, ID: {v} {num}".format(v=shipdict[s]["Vessel Name"], num=shipdict[s]["Vessel ID"]))
+        earliestdate = datetime.date(2000,1,1)
+        latestdate = datetime.date(1800,1,1)
+        for i in shipdict[s]:
+            if not(type(i) is int):
+                continue
+            for ws in shipdict[s][i]:
+                 crewlist = shipdict[s][i][ws]["Crewlist"]
+                 for mar in crewlist:
+                     if verbose:
+                         print("Dates: {d} {d2}".format(d=mar["datejoin"], d2=mar["dateleft"]))
+                     dt = str2Date(mar["datejoin"], assumefirstday=False, verbose=verbose)
+                     if dt < earliestdate:
+                        earliestdate = dt                                          
+                     dt = str2Date(mar["dateleft"], assumefirstday=True, verbose=verbose)
+                     if dt > latestdate:
+                         latestdate = dt                     
+        print("Vessel Name, ID, Dates: {v}, {num}, {de}, {dl}".format(v=shipdict[s]["Vessel Name"],
+              num=shipdict[s]["VesselID"], de=earliestdate, dl=latestdate))
+                        
 
 if __name__ == '__main__':
     """
@@ -259,6 +316,8 @@ if __name__ == '__main__':
                         help="check whether the ship names and registry number match across each 'series'")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="verbose mode - print statements while reading data")
+    parser.add_argument("-d", "--dates", action="store_true",
+                        help="find the earliest start dates and latest leave dates for each vessel")                        
     args = parser.parse_args()
     
     shipdict = getVesselsInfo(verbose=args.verbose)
@@ -266,5 +325,7 @@ if __name__ == '__main__':
         printCrewLists(shipdict)
     if args.checkships:
         checkNames(shipdict)
+    if args.dates:
+        findDates(shipdict, verbose=args.verbose)
                     
     
