@@ -270,22 +270,29 @@ def str2Date(datestr, assumefirstday=True, verbose=False, acceptguesses=False):
     try:
         outputdate = datetime.date(y,m,d)
     except:
-        if verbose:
-            print("date that cannot be processed: {d}".format(d=datestr))
-            #time.sleep(1)
+        if datestr != "blk":        
+            # don't print error message for "blk" meaning blank
+            print("date string that cannot be processed: {d}".format(d=datestr))
+        #time.sleep(1)
         if assumefirstday:            
-            y, m, d = 1800, 1, 1
+            y, m, d = 1850, 1, 1
         else:
-            y, m, d = 2000, 1, 1
+            y, m, d = 1920, 1, 1
         outputdate= datetime.date(y, m, d)
     return outputdate
+
+def checkBoundsDate(dt, lbound = 1850, ubound = 1920, verbose=False):
+   if dt.year < lbound or dt.year > ubound:
+       print("Date {d} falls before {l} or after {u}.".format(d=dt, l=lbound, u=ubound))
+       return False
+   else:
+       return True
   
 def findDates(shipdict, verbose=False):
     for s in shipdict:
-        if verbose:
-            print("Vessel Name, ID: {v} {num}".format(v=shipdict[s]["Vessel Name"], num=shipdict[s]["Vessel ID"]))
-        earliestdate = datetime.date(2000,1,1)
-        latestdate = datetime.date(1800,1,1)
+        print("Vessel Name, ID: {v} {num}".format(v=shipdict[s]["Vessel Name"], num=shipdict[s]["VesselID"]))
+        earliestdate = datetime.date(1920,1,1)
+        latestdate = datetime.date(1850,1,1)
         for i in shipdict[s]:
             if not(type(i) is int):
                 continue
@@ -293,13 +300,16 @@ def findDates(shipdict, verbose=False):
                  crewlist = shipdict[s][i][ws]["Crewlist"]
                  for mar in crewlist:
                      if verbose:
+                         print("{n}".format(n=mar["name"]))
                          print("Dates: {d} {d2}".format(d=mar["datejoin"], d2=mar["dateleft"]))
                      dt = str2Date(mar["datejoin"], assumefirstday=False, verbose=verbose)
-                     if dt < earliestdate:
-                        earliestdate = dt                                          
+                     if checkBoundsDate(dt, verbose=verbose):                         
+                         if dt < earliestdate:
+                             earliestdate = dt                                                                      
                      dt = str2Date(mar["dateleft"], assumefirstday=True, verbose=verbose)
-                     if dt > latestdate:
-                         latestdate = dt                     
+                     if checkBoundsDate(dt, verbose=verbose):                         
+                         if dt > latestdate:
+                             latestdate = dt                     
         print("Vessel Name, ID, Dates: {v}, {num}, {de}, {dl}".format(v=shipdict[s]["Vessel Name"],
               num=shipdict[s]["VesselID"], de=earliestdate, dl=latestdate))
                         
