@@ -134,6 +134,8 @@ def getVesselsInfo(verbose=False):
                         shipdict[f[1]]["VesselIDs"].append(shipnum)
                         
                     shipdict[f[1]][i[1]][sheet]["Crewlist"] = []
+                    shipdict[f[1]][i[1]][sheet]["FileName"] = i[0]
+                    
                     # headings are on row 8, 2 rows with example data 10-11
                     rownum = 12
                     # could put anything here, so that while loop doesn't immediately stop
@@ -194,9 +196,11 @@ def printCrewLists(shipdict):
                 #print(shipdict[s][i][ws])
 
                 crewlist = shipdict[s][i][ws]["Crewlist"]
+                
                 if len(crewlist) > 0:
-                    print("Ship name: {n}. Ship Registry Number: {n2} Port of registry: {p}\n".format(
-                    n=shipdict[s]["Vessel Name"], n2=shipdict[s]["VesselID"], p=shipdict[s]["Port"]))
+                    print("Series {s}. File name {f}. Sheet {ws}. Ship name: {n}. Ship Registry Number: {n2} Port of registry: {p}\n".format(
+                    n=shipdict[s]["Vessel Name"], n2=shipdict[s]["VesselID"], p=shipdict[s]["Port"],
+s=s, f=shipdict[s][i][ws]["FileName"], ws=ws))
                     print("{n:30}\t{y:10} {a:8}\t{p:20}\t{d:11} {pj:20} {c:20}\t{d2:20} {pl}".format(n="Name",
                           y="Birth Year",
                           a="Age",
@@ -290,7 +294,8 @@ def checkBoundsDate(dt, lbound = 1850, ubound = 1920, verbose=False):
   
 def findDates(shipdict, verbose=False):
     for s in shipdict:
-        print("Vessel Name, ID: {v} {num}".format(v=shipdict[s]["Vessel Name"], num=shipdict[s]["VesselID"]))
+        print("\nSeries {s}. Vessel Name, ID: {v} {num}".format(s=s,
+              v=shipdict[s]["Vessel Name"], num=shipdict[s]["VesselID"]))
         earliestdate = datetime.date(1920,1,1)
         latestdate = datetime.date(1850,1,1)
         for i in shipdict[s]:
@@ -298,10 +303,11 @@ def findDates(shipdict, verbose=False):
                 continue
             for ws in shipdict[s][i]:
                  crewlist = shipdict[s][i][ws]["Crewlist"]
+                 print("File {f}. Sheet {ws}".format(f=shipdict[s][i][ws]["FileName"], ws=ws))
                  for mar in crewlist:
                      if verbose:
-                         print("{n}".format(n=mar["name"]))
-                         print("Dates: {d} {d2}".format(d=mar["datejoin"], d2=mar["dateleft"]))
+                         print("{n}, Dates: {d} {d2}".format(n=mar["name"],
+                               d=mar["datejoin"], d2=mar["dateleft"]))                         
                      dt = str2Date(mar["datejoin"], assumefirstday=False, verbose=verbose)
                      if checkBoundsDate(dt, verbose=verbose):                         
                          if dt < earliestdate:
