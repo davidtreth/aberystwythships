@@ -1,0 +1,47 @@
+table {
+    width:100%;
+    border: 1px solid black;
+    border-collapse:collapse;
+}
+tr {
+    margin:auto;
+    clear:both;
+    width:100%;
+    border: none;
+}
+tr:nth-child(even) {
+    background-color: Gainsboro;
+}
+td, th {
+    margin-right:20px;
+    padding: 4px;
+    text-align:center;
+}
+td:nth-child(1), th:nth-child(1) {
+    text-align:left;
+    border-right:0px solid DarkSlateGray;
+}
+td:nth-child(2), th:nth-child(2) {
+text-align:center;
+    border-right:0px solid DarkSlateGray;
+}
+td:nth-child(3), th:nth-child(3) {
+text-align:center;
+    border-right:0px solid DarkSlateGray;
+}
+td:nth-child(4) {
+    text-align:center;
+}
+tr.titlerow {
+    background-color: Gainsboro;
+}
+tr.titlerow th {
+    text-align: centre;
+}
+
+a {
+    text-decoration: none;
+}
+body {
+    font-family: sans-serif;
+}

@@ -85,8 +85,10 @@ def getVesselsInfo(verbose=False):
                 print("Directory: {d}".format(d=f[0]))
             os.chdir(f[0])
             shipdict[f[1]] = defaultdict(dict)
-            shipdict[f[1]]["Vessel Names2"] = []
+            shipdict[f[1]]["Vessel Names2"] = []            
             shipdict[f[1]]["VesselIDs"] = []
+            shipdict[f[1]]["File Names2"] = []
+            shipdict[f[1]]["Worksheets2"] = []
             # find the Excel files, and sort by number
             filelist = glob.glob("File*.xlsx")  
             totalNfiles += len(filelist)
@@ -135,7 +137,8 @@ def getVesselsInfo(verbose=False):
                         
                     shipdict[f[1]][i[1]][sheet]["Crewlist"] = []
                     shipdict[f[1]][i[1]][sheet]["FileName"] = i[0]
-                    
+                    shipdict[f[1]]["File Names2"].append(i[0])
+                    shipdict[f[1]]["Worksheets2"].append(sheet)
                     # headings are on row 8, 2 rows with example data 10-11
                     rownum = 12
                     # could put anything here, so that while loop doesn't immediately stop
@@ -172,17 +175,41 @@ def getVesselsInfo(verbose=False):
             #print("Sheets: {sh}".format(sh=sheets))
             os.chdir("..")
         os.chdir("..")
+    os.chdir("..")
     print("\nTotal number of Excel files = {t}".format(t=totalNfiles))
     return shipdict
 #print(shipdict) 
+
+def printHTMLIntro(hfile):
+   """ print opening HTML boilerplate to file """
+   hfile.write("""<!DOCTYPE html>
+   <html>
+   <head>
+   <meta charset='UTF-8'>
+   <title>Aberystwyth Shipping Records - National Library of Wales - Llyfrgell Genedlaethol Cymru</title>
+   <link href='abership.css' rel='stylesheet' type=text/css media='all'>
+   </head>
+   <body>""")
+
+def printHTMLClose(hfile):
+    """ print closing HTML"""
+    hfile.write("</body></html>")
     
-def printCrewLists(shipdict):
+def printCrewLists(shipdict, htmlout=""):
     shipnames = [shipdict[s]["Vessel Name"] for s in shipdict]
     #shipnames.sort()
-    
+    if htmlout:
+        # open file and print intro of HTML file
+        hfile = open(htmlout, "w")
+        printHTMLIntro(hfile)
+        hfile.write("<h2>Total number of vessels: {n}</h2>".format(n=len(shipnames)))
+        
+        
     print("Number of vessels = {n}".format(n=len(shipnames)))
     #print(shipdict)
     for s in shipdict:
+        if htmlout:
+            hfile.write("<h2>Series {s}. Vessel name: {n}</h2>".format(s=s, n=shipdict[s]["Vessel Name"]))
         for i in shipdict[s]:
             #print(i)
             if not(type(i) is int):
@@ -210,19 +237,43 @@ s=s, f=shipdict[s][i][ws]["FileName"], ws=ws))
                           c="Capacity",
                           d2="Date Left",
                           pl="Port Left"))
-                      
+                if htmlout:
+                    hfile.write("<h3>Series {s}. File name {f}. Sheet {ws}. Ship name: {n}</h3><h4>Ship Registry Number: {n2} Port of registry: {p}</h4>".format(
+                    n=shipdict[s]["Vessel Name"], n2=shipdict[s]["VesselID"], p=shipdict[s]["Port"],
+s=s, f=shipdict[s][i][ws]["FileName"], ws=ws))
+                    hfile.write("""<table>
+                    <tr class='titlerow'><th>Name</th><th>Birth Year</th><th>Age</th>
+                    <th>Birthplace</th><th>Date Joined</th><th>Port Joined</th>
+                    <th>Capacity</th><th>Date Left</th><th>Port Left</th></tr>""")
+                         
+                    
+
                 for mar in crewlist:
                     #print(mar)
                     print("{n:30}\t{y:10} {a:8}\t{p:20}\t{d:11} {pj:20} {c:20}\t{d2:20} {pl}".format(n=mar["name"],
                           y=mar["byear"], a=mar["age"], p=mar["bplace"], d=mar["datejoin"], pj=mar["portjoin"],
 c=mar["capacity"], d2=mar["dateleft"], pl=mar["portleft"]))
+                    if htmlout:
+                        hfile.write("<tr><td>{n}</td><td>{y}</td><td>{a}</td><td>{p}</td><td>{d}</td><td>{pj}</td><td>{c}</td><td>{d2}</td><td>{pl}</td></tr>".format(
+                        n=mar["name"], y=mar["byear"], a=mar["age"], p=mar["bplace"],
+d=mar["datejoin"], pj=mar["portjoin"], c=mar["capacity"], d2=mar["dateleft"], pl=mar["portleft"]))
                 print("\n")
+                print(htmlout, hfile)
+                if htmlout:
+                    hfile.write("</table>\n")
         print("\n")
-
-def checkNames(shipdict):
+    if htmlout:
+        printHTMLClose(hfile)
+        hfile.close()
+    
+def checkNames(shipdict, htmlout=""):
     shipnames = [shipdict[s]["Vessel Name"] for s in shipdict]
     #shipnames.sort()
-    
+    if htmlout:
+        # open file and print intro of HTML file
+        hfile = open(htmlout, "w")
+        printHTMLIntro(hfile)
+        hfile.write("<h2>Total number of vessels: {n}</h2>".format(n=len(shipnames)))
     print("Number of vessels = {n}".format(n=len(shipnames)))
     print("\nVessel names: ")
     for s in shipnames:
@@ -232,24 +283,35 @@ def checkNames(shipdict):
     # are the same as that of the first one
     shipnames2 = [shipdict[s]["Vessel Names2"] for s in shipdict]
     shipnumbers = [shipdict[s]["VesselIDs"] for s in shipdict]
-    zshipnames = list(zip(shipnames, shipnames2, shipnumbers))
+    shipfilenames = [shipdict[s]["File Names2"] for s in shipdict]
+    shipwsnames = [shipdict[s]["Worksheets2"] for s in shipdict]
+    zshipnames = list(zip(shipnames, shipnames2, shipnumbers, shipfilenames, shipwsnames))
     for z in zshipnames:
         print("{n} : {w} worksheets".format(n=z[0], w=len(z[1])))
+        if htmlout:
+            hfile.write("<h3>Vessel: {n} : {w} worksheets</h3>".format(n=z[0], w=len(z[1])))
         try:
             assert len(list(set(z[2]))) == 1
         except:              
             print("more than one ship registry number per series")
             print(z[2])
+            if htmlout:
+                hfile.write("<p><em>more than one vessel registry number per series</em><br>Numbers found in spreadsheets: {ns}</p>".format(ns=z[2]))
     
-        for s2 in z[1]:
+        for s2, fn, ws in list(zip(z[1], z[3], z[4])):
             try:
                 assert(z[0].strip() == s2.strip())
             except:
                 print("ship name conflict")
                 print(z[0], s2)
-                #time.sleep(5)
+                if htmlout:
+                    hfile.write("<p><em>vessel name conflict</em><br>filename: {f} sheet: {ws}<br><strong>First worksheet</strong>: {v1} <strong>Current worksheet</strong>: {v2}</p>".format(
+                    v1=z[0], v2=s2, f=fn, ws=ws))
+    if htmlout:
+        printHTMLClose(hfile)
+        hfile.close()                    #time.sleep(5)
 
-def str2Date(datestr, assumefirstday=True, verbose=False, acceptguesses=False):
+def str2Date(datestr, assumefirstday=True, verbose=False, acceptguesses=False, hfile=None):
     datestr = datestr.strip()
     datestr = datestr.replace("/","-")
     if acceptguesses:
@@ -274,9 +336,11 @@ def str2Date(datestr, assumefirstday=True, verbose=False, acceptguesses=False):
     try:
         outputdate = datetime.date(y,m,d)
     except:
-        if datestr != "blk":        
+        if datestr.lower() not in ["blk", "remains", "continued", "continues", "remains on board", "continuous", "still on board", "still remaining"]:        
             # don't print error message for "blk" meaning blank
             print("date string that cannot be processed: {d}".format(d=datestr))
+            if hfile:
+                hfile.write("<p><em>date string that cannot be processed:</em> {d}</p>".format(d=datestr))
         #time.sleep(1)
         if assumefirstday:            
             y, m, d = 1850, 1, 1
@@ -285,16 +349,27 @@ def str2Date(datestr, assumefirstday=True, verbose=False, acceptguesses=False):
         outputdate= datetime.date(y, m, d)
     return outputdate
 
-def checkBoundsDate(dt, lbound = 1850, ubound = 1920, verbose=False):
+def checkBoundsDate(dt, lbound = 1850, ubound = 1920, verbose=False, hfile=None):
    if dt.year < lbound or dt.year > ubound:
        print("Date {d} falls before {l} or after {u}.".format(d=dt, l=lbound, u=ubound))
+       if hfile:
+           hfile.write("<p><em>Date {d} falls before {l} or after {u}</em></p>".format(d=dt,
+                       l=lbound, u=ubound))
        return False
    else:
        return True
   
-def findDates(shipdict, verbose=False):
+def findDates(shipdict, verbose=False, htmlout=""):
+    if htmlout:
+        # open file and print intro of HTML file
+        hfile = open(htmlout, "w")
+        printHTMLIntro(hfile)
+    else:
+        hfile = None
     for s in shipdict:
         print("\nSeries {s}. Vessel Name, ID: {v} {num}".format(s=s,
+              v=shipdict[s]["Vessel Name"], num=shipdict[s]["VesselID"]))
+        hfile.write("<h3>Series {s}. Vessel Name, ID: {v} {num}</h3>".format(s=s,
               v=shipdict[s]["Vessel Name"], num=shipdict[s]["VesselID"]))
         earliestdate = datetime.date(1920,1,1)
         latestdate = datetime.date(1850,1,1)
@@ -304,21 +379,28 @@ def findDates(shipdict, verbose=False):
             for ws in shipdict[s][i]:
                  crewlist = shipdict[s][i][ws]["Crewlist"]
                  print("File {f}. Sheet {ws}".format(f=shipdict[s][i][ws]["FileName"], ws=ws))
+                 if htmlout:
+                     hfile.write("<p>filename {f}. sheet {ws}</p>".format(f=shipdict[s][i][ws]["FileName"], ws=ws))
                  for mar in crewlist:
                      if verbose:
                          print("{n}, Dates: {d} {d2}".format(n=mar["name"],
                                d=mar["datejoin"], d2=mar["dateleft"]))                         
-                     dt = str2Date(mar["datejoin"], assumefirstday=False, verbose=verbose)
-                     if checkBoundsDate(dt, verbose=verbose):                         
+                     dt = str2Date(mar["datejoin"], assumefirstday=False, verbose=verbose, hfile=hfile)
+                     if checkBoundsDate(dt, verbose=verbose, hfile=hfile):                         
                          if dt < earliestdate:
                              earliestdate = dt                                                                      
-                     dt = str2Date(mar["dateleft"], assumefirstday=True, verbose=verbose)
-                     if checkBoundsDate(dt, verbose=verbose):                         
+                     dt = str2Date(mar["dateleft"], assumefirstday=True, verbose=verbose, hfile=hfile)
+                     if checkBoundsDate(dt, verbose=verbose, hfile=hfile):                         
                          if dt > latestdate:
                              latestdate = dt                     
         print("Vessel Name, ID, Dates: {v}, {num}, {de}, {dl}".format(v=shipdict[s]["Vessel Name"],
               num=shipdict[s]["VesselID"], de=earliestdate, dl=latestdate))
-                        
+        if htmlout:
+            hfile.write("<p>Vessel Name, ID, Earliest and latest dates:<br>{v}, {num}, {de}, {dl}</p>".format(v=shipdict[s]["Vessel Name"],
+                        num=shipdict[s]["VesselID"], de=earliestdate, dl=latestdate))
+    if htmlout:
+        printHTMLClose(hfile)
+        hfile.close()
 
 if __name__ == '__main__':
     """
@@ -334,14 +416,24 @@ if __name__ == '__main__':
                         help="verbose mode - print statements while reading data")
     parser.add_argument("-d", "--dates", action="store_true",
                         help="find the earliest start dates and latest leave dates for each vessel")                        
+    parser.add_argument("-m", "--html", action="store_true",
+                        help="if set, save results to HTML files")
     args = parser.parse_args()
     
     shipdict = getVesselsInfo(verbose=args.verbose)
+    if args.html:
+        htmlcrewlists = "aberships_crewlists.html"
+        htmlcheckships = "aberships_checkvesselnames.html"
+        htmlcheckdates = "aberships_checkdates.html"
+    else:
+        htmlcrewlists = ""
+        htmlcheckships = ""
+        htmlcheckdates = ""
     if args.crewlists:
-        printCrewLists(shipdict)
+        printCrewLists(shipdict, htmlout=htmlcrewlists)
     if args.checkships:
-        checkNames(shipdict)
+        checkNames(shipdict, htmlout=htmlcheckships)
     if args.dates:
-        findDates(shipdict, verbose=args.verbose)
+        findDates(shipdict, verbose=args.verbose, htmlout=htmlcheckdates)
                     
     
