@@ -21,14 +21,21 @@ import matplotlib.pyplot as plt
 import abership
 
 
-def plotVessels(shipdict, verbose=False):
+def plotVessels(shipdict, verbose=False, cy=True):
     with plt.xkcd():
         fig, ax = plt.subplots(figsize=(16,8))
-    plt.title("Aberystwyth Shipping Records\nwww.llgc.org.uk/en/collections/activities/research/nlw-data/aberystwyth-shipping-records-dataset")    
+    if cy:
+        plt.title("Cofnodion Llongau Aberystwyth\nwww.llgc.org.uk/cy/casgliadau/gweithgareddau/ymchwil/data-llgc/cofnodion-llongau-aberystwyth")    
+    else:
+        plt.title("Aberystwyth Shipping Records\nwww.llgc.org.uk/en/collections/activities/research/nlw-data/aberystwyth-shipping-records-dataset")    
     y = [1,1]
     ax.set_xlim(datetime.date(1850,1,1), datetime.date(1920,1,1))
-    ax.set_xlabel("Year")
-    ax.set_ylabel("Series number")
+    if cy:
+        ax.set_xlabel("Blwyddyn")
+        ax.set_ylabel("Rhif Cyfres")
+    else:
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Series number")
     for s in shipdict:
         earliestdate = datetime.date(1920,1,1)
         latestdate = datetime.date(1850,1,1)
@@ -55,7 +62,10 @@ def plotVessels(shipdict, verbose=False):
         if earliestdate != datetime.date(1920,1,1) and latestdate != datetime.date(1850,1,1):
             ax.plot([earliestdate, latestdate], y, "k-", lw=0.5)
         y = [i+1 for i in y]
-    plt.savefig("dates_all_vessels.png")
+    if cy:
+        plt.savefig("Dyddiadau_pob_llong.png")
+    else:
+        plt.savefig("dates_all_vessels.png")
                 
         
 
@@ -80,6 +90,7 @@ if __name__ == '__main__':
     shipdict = abership.getVesselsInfo(verbose=args.verbose)
     if args.vessels:
         plotVessels(shipdict, args.verbose)
+        plotVessels(shipdict, args.verbose, cy=False)
     if args.mariners:
         plotMariners(shipdict, args.verbose)
     plt.show()
