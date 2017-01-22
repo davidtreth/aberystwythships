@@ -70,34 +70,18 @@ def plotVessels(shipdict, verbose=False, cy=True):
         
 
 
-def plotMariners(shipdict, verbose=False, cy=True, allinone=False):
-    with plt.xkcd():
-        if allinone:
-            # for the plot with all mariners from all vessels
-            # use default styles
-            plt.rcdefaults()
-            # plotting all mariners on a single plot
-            fig, ax = plt.subplots(figsize=(16,12))
+def plotMariners(shipdict, verbose=False, cy=True):
+    with plt.xkcd():        
+        for s in shipdict:                   
+            # one plot per vessel
+            fig, ax = plt.subplots(figsize=(12,8))
+            plt.title(shipdict[s]["Vessel Name"])
             n = 1
             ax.set_yticks([])
-            ax.set_xlim(datetime.date(1850,1,1), datetime.date(1920,1,1))
-            if cy:
-                plt.title("Pob Llong")
-            else:
-                plt.title("All Vessels")
-        for s in shipdict:            
-            if not(allinone):            
-                # one plot per vessel
-                fig, ax = plt.subplots(figsize=(12,8))
-                plt.title(shipdict[s]["Vessel Name"])
-                n = 1
-                ax.set_yticks([])
             if cy:
                 ax.set_xlabel("Dyddiad")
             else:
                 ax.set_xlabel("Date")
-            
-            
             for i in shipdict[s]:
                 # loop through each file
                 # i should be the numerical index of each file
@@ -119,18 +103,49 @@ def plotMariners(shipdict, verbose=False, cy=True, allinone=False):
                         if abership.checkBoundsDate(dtj) and abership.checkBoundsDate(dtl) and dtl != datetime.date(1850,1,1) and dtj != datetime.date(1920,1,1):
                             plt.plot([dtj,dtl], [n, n], "k-")
                             n += 1
-            if not(allinone):
-                # set y axis limits, and save figure to a file
-                ax.set_ylim([0,n+1])
-                plt.savefig("crewlist_{n}_{v}.png".format(n=str(s).zfill(3), v=shipdict[s]["Vessel Name"].replace(" ","_")))
-        if allinone:
-            # for the all in one plot
+            
             # set y axis limits, and save figure to a file
             ax.set_ylim([0,n+1])
-            plt.savefig("all_vessels_crewlists.png")
-                        
-                    
+            plt.savefig("crewlist_{n}_{v}.png".format(n=str(s).zfill(3), v=shipdict[s]["Vessel Name"].replace(" ","_")))
 
+
+                        
+def plotAllMariners(shipdict, verbose=False, cy=True):
+    # for the plot with all mariners from all vessels
+    # use default styles
+    plt.rcdefaults()
+    # plotting all mariners on a single plot
+    fig, ax = plt.subplots(figsize=(16,12))
+    n = 1
+    ax.set_yticks([])
+    ax.set_xlim(datetime.date(1850,1,1), datetime.date(1920,1,1))
+    if cy:
+        plt.title("Pob Llong")
+    else:
+        plt.title("All Vessels")
+    for s in shipdict:
+        for i in shipdict[s]:
+            if not(type(i) is int):
+                continue
+            for ws in shipdict[s][i]:
+                crewlist = shipdict[s][i][ws]["Crewlist"]
+                print("File {f}. Sheet {ws}".format(f=shipdict[s][i][ws]["FileName"], ws=ws))
+                for mar in crewlist:
+                    # loop through the mariners in the crew list
+                    # pick out the dates of joining and leaving
+                    dtj = abership.str2Date(mar["datejoin"], assumefirstday=False, verbose=verbose)                                                                                                                    
+                    dtl = abership.str2Date(mar["dateleft"], assumefirstday=True, verbose=verbose)
+                    # check dates are within bounds and are not the defaults
+                    # 1 Jan 1850 / 1 Jan 1920
+                    # which indicate an unparsable strring
+                    if abership.checkBoundsDate(dtj) and abership.checkBoundsDate(dtl) and dtl != datetime.date(1850,1,1) and dtj != datetime.date(1920,1,1):
+                        plt.plot([dtj,dtl], [n, n], "k-")
+                        n += 1
+    # for the all in one plot
+    # set y axis limits, and save figure to a file
+    ax.set_ylim([0,n+1])
+    plt.savefig("all_vessels_crewlists.png")
+    
 if __name__ == '__main__':
     """
     If invoked at the command-line
@@ -151,5 +166,5 @@ if __name__ == '__main__':
         plotVessels(shipdict, args.verbose, cy=False)
     if args.mariners:
         plotMariners(shipdict, args.verbose)
-        plotMariners(shipdict, args.verbose, allinone=True)
+        plotAllMariners(shipdict, args.verbose)
     #plt.show()
