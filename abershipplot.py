@@ -68,8 +68,75 @@ def plotVessels(shipdict, verbose=False, cy=True):
         plt.savefig("dates_all_vessels.png")
                 
         
-
-
+def CSSVessels(shipdict, verbose=False):
+    htmlout = "datesallvessels.html"
+    hfile = file(htmlout, "w")
+    hfile.write("""<!DOCTYPE html>
+<html>
+<head>
+<title>Earliest and latest dates for all vessels</title>
+<style type="text/css">
+.shiprow{
+margin:0;
+display:block;}
+.shipleft{
+background-color:lightgray;
+height:5px;
+margin-top:2px;
+margin-bottom:2px;
+margin-left:0;
+margin-right:0;
+display:inline-block;}
+.shipright{
+background-color:lightgray;
+height:5px;
+margin-top:2px;
+margin-bottom:2px;
+margin-left:0;
+margin-right:0;
+display:inline-block;}
+.shiprange{
+background-color:black;
+height:9px;
+margin-left:0;
+margin-right:0;
+display:inline-block;}
+.shiprange:hover{
+background-color:red;
+}
+</style>
+</head>
+<body>""")
+    hfile.write("\n<div class='shipsouter'>")
+    for s in shipdict:
+        earliestdate = datetime.date(1920,1,1)
+        latestdate = datetime.date(1850,1,1)
+        for i in shipdict[s]:
+            if not(type(i) is int):
+                continue
+            for ws in shipdict[s][i]:
+                crewlist = shipdict[s][i][ws]["Crewlist"]
+                print("File {f}. Sheet {ws}".format(f=shipdict[s][i][ws]["FileName"], ws=ws))
+                for mar in crewlist:
+#                     if verbose:
+#                         print("{n}, Dates: {d} {d2}".format(n=mar["name"],
+#                               d=mar["datejoin"], d2=mar["dateleft"]))                         
+                     dt = abership.str2Date(mar["datejoin"], assumefirstday=False, verbose=verbose)
+                     if abership.checkBoundsDate(dt):                         
+                         if dt < earliestdate:
+                             earliestdate = dt                                                                      
+                     dt = abership.str2Date(mar["dateleft"], assumefirstday=True, verbose=verbose)
+                     if abership.checkBoundsDate(dt):                         
+                         if dt > latestdate:
+                             latestdate = dt
+        if earliestdate != datetime.date(1920,1,1) and latestdate != datetime.date(1850,1,1):
+             leftbl = 1000*(earliestdate - datetime.date(1850,1,1)).total_seconds()/(datetime.date(1920,1,1) - datetime.date(1850,1,1)).total_seconds()
+             midbl = 1000*(latestdate-earliestdate).total_seconds()/(datetime.date(1920,1,1) - datetime.date(1850,1,1)).total_seconds()
+             rightbl = 1000*(datetime.date(1920,1,1) - latestdate).total_seconds()/(datetime.date(1920,1,1) - datetime.date(1850,1,1)).total_seconds()
+             imglink = "crewlists/crewlist_{n}_{v}.png".format(n=str(s).zfill(3), v=shipdict[s]["Vessel Name"].replace(" ","_").replace("&","and"))
+             hfile.write("\n<div class='shiprow'><div class='shipleft' style='width: {l:.0f}px'></div><a href='{i}'><div class='shiprange' style='width: {m:.0f}px' title='{t}'></div></a><div class='shipright' style='width: {r:.0f}px'></div></div>".format(l=leftbl, m=midbl, r=rightbl, t=shipdict[s]["Vessel Name"], i=imglink))
+    hfile.write("</div>\n</body></html>")
+    
 def plotMariners(shipdict, verbose=False, cy=True):
     with plt.xkcd():        
         for s in shipdict:                   
@@ -106,7 +173,7 @@ def plotMariners(shipdict, verbose=False, cy=True):
             
             # set y axis limits, and save figure to a file
             ax.set_ylim([0,n+1])
-            plt.savefig("crewlist_{n}_{v}.png".format(n=str(s).zfill(3), v=shipdict[s]["Vessel Name"].replace(" ","_")))
+            plt.savefig("crewlist_{n}_{v}.png".format(n=str(s).zfill(3), v=shipdict[s]["Vessel Name"].replace(" ","_").replace("&","and")))
 
 
                         
@@ -154,6 +221,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--vessels", action="store_true",
                         help="plot the earliest and latest date known for each vessel")
+    
+    parser.add_argument("-d", "--htmlvessels", action="store_true",
+                        help="plot the earliest and latest date known for each vessel using HTML+CSS <div>s")                        
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="verbose mode - print statements while reading data")                        
     parser.add_argument("-m", "--mariners", action="store_true",
@@ -164,6 +234,8 @@ if __name__ == '__main__':
     if args.vessels:
         plotVessels(shipdict, args.verbose)
         plotVessels(shipdict, args.verbose, cy=False)
+    if args.htmlvessels:
+        CSSVessels(shipdict, args.verbose)        
     if args.mariners:
         plotMariners(shipdict, args.verbose)
         plotAllMariners(shipdict, args.verbose)
