@@ -70,10 +70,11 @@ def plotVessels(shipdict, verbose=False, cy=True):
         
 def CSSVessels(shipdict, verbose=False):
     htmlout = "datesallvessels.html"
-    hfile = file(htmlout, "w")
-    hfile.write("""<!DOCTYPE html>
+    hfile = open(htmlout, "w")
+    hfile.write(abership.conv2unicode("""<!DOCTYPE html>
 <html>
 <head>
+<meta charset='utf-8'>
 <title>Earliest and latest dates for all vessels</title>
 <style type="text/css">
 .shiprow{
@@ -104,10 +105,17 @@ display:inline-block;}
 .shiprange:hover{
 background-color:red;
 }
+.shipname {
+margin-left:10px;
+margin-right:10px;
+font-size:small;
+display:inline-block;
+width:100px;
+}
 </style>
 </head>
-<body>""")
-    hfile.write("\n<div class='shipsouter'>")
+<body>"""))
+    hfile.write(abership.conv2unicode("\n<div class='shipsouter'>"))
     for s in shipdict:
         earliestdate = datetime.date(1920,1,1)
         latestdate = datetime.date(1850,1,1)
@@ -133,9 +141,10 @@ background-color:red;
              leftbl = 1000*(earliestdate - datetime.date(1850,1,1)).total_seconds()/(datetime.date(1920,1,1) - datetime.date(1850,1,1)).total_seconds()
              midbl = 1000*(latestdate-earliestdate).total_seconds()/(datetime.date(1920,1,1) - datetime.date(1850,1,1)).total_seconds()
              rightbl = 1000*(datetime.date(1920,1,1) - latestdate).total_seconds()/(datetime.date(1920,1,1) - datetime.date(1850,1,1)).total_seconds()
-             imglink = "crewlists/crewlist_{n}_{v}.png".format(n=str(s).zfill(3), v=shipdict[s]["Vessel Name"].replace(" ","_").replace("&","and"))
-             hfile.write("\n<div class='shiprow'><div class='shipleft' style='width: {l:.0f}px'></div><a href='{i}'><div class='shiprange' style='width: {m:.0f}px' title='{t}'></div></a><div class='shipright' style='width: {r:.0f}px'></div></div>".format(l=leftbl, m=midbl, r=rightbl, t=shipdict[s]["Vessel Name"], i=imglink))
-    hfile.write("</div>\n</body></html>")
+             #imglink = "crewlists/crewlist_{n}_{v}.png".format(n=str(s).zfill(3), v=shipdict[s]["Vessel Name"].replace(" ","_").replace("&","and"))
+             imglink = "crewlists/vessel{n}.html".format(n=str(s).zfill(3))
+             hfile.write(abership.conv2unicode("\n<div class='shiprow'><div class='shipname'><a href='{i}'>{t}</a></div><div class='shipleft' style='width: {l:.0f}px'></div><a href='{i}'><div class='shiprange' style='width: {m:.0f}px' title='{t}'></div></a><div class='shipright' style='width: {r:.0f}px'></div></div>".format(l=leftbl, m=midbl, r=rightbl, t=shipdict[s]["Vessel Name"], i=imglink)))
+    hfile.write(abership.conv2unicode("</div>\n</body></html>"))
     
 def plotMariners(shipdict, verbose=False, cy=True):
     with plt.xkcd():        

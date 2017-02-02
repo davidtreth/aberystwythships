@@ -29,6 +29,7 @@ import os
 import sys, imp
 import datetime
 import time
+import io
 
 import argparse
 imp.reload(sys)
@@ -37,6 +38,11 @@ if sys.version_info[0] < 3:
 from openpyxl import load_workbook
 from operator import itemgetter
 from collections import defaultdict
+
+def conv2unicode(text):
+    if sys.version_info[0] < 3:
+        text = unicode(text)
+    return text
 
 def getVesselsInfo(verbose=False):
     if verbose:
@@ -162,10 +168,14 @@ def getVesselsInfo(verbose=False):
                             marinerdateleft = marinerdateleft.date()
                         marinerportleft = sheet_ranges['N{r}'.format(r=rownum)].value                   
                         if marinername:
-                            crewdict = {"name":marinername, "byear":str(marinerbyear), "age":str(marinerage),
-                                        "bplace":str(marinerbplace), "datejoin":str(marinerdatejoin),
-                                        "portjoin":str(marinerportjoin), "capacity":str(marinercap),
-                                        "dateleft":str(marinerdateleft), "portleft":str(marinerportleft)}
+                            #crewdict = {"name":marinername, "byear":str(marinerbyear), "age":str(marinerage),
+                            #            "bplace":str(marinerbplace), "datejoin":str(marinerdatejoin),
+                            #            "portjoin":str(marinerportjoin), "capacity":str(marinercap),
+                            #            "dateleft":str(marinerdateleft), "portleft":str(marinerportleft)}
+                            crewdict = {"name":marinername, "byear":conv2unicode(str(marinerbyear)), "age":conv2unicode(str(marinerage)),
+                                        "bplace":conv2unicode(str(marinerbplace)), "datejoin":conv2unicode(str(marinerdatejoin)),
+                                        "portjoin":conv2unicode(str(marinerportjoin)), "capacity":conv2unicode(str(marinercap)),
+                                        "dateleft":conv2unicode(str(marinerdateleft)), "portleft":conv2unicode(str(marinerportleft))}
 
                                                                                                      
                             shipdict[f[1]][i[1]][sheet]["Crewlist"].append(crewdict)
@@ -182,18 +192,53 @@ def getVesselsInfo(verbose=False):
 
 def printHTMLIntro(hfile):
    """ print opening HTML boilerplate to file """
-   hfile.write("""<!DOCTYPE html>
+   hfile.write(conv2unicode("""<!DOCTYPE html>
    <html>
    <head>
    <meta charset='UTF-8'>
    <title>Aberystwyth Shipping Records - National Library of Wales - Llyfrgell Genedlaethol Cymru</title>
    <link href='abership.css' rel='stylesheet' type=text/css media='all'>
    </head>
-   <body>""")
+   <body>"""))
+   
+def printHTMLIntro2(hfile):
+    """ write longer HTML boilerplate for neocities pages """
+    
+    htmlint = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Earliest and latest dates for all vessels</title>
+<link href="/style.css" rel="stylesheet" type="text/css" media="all">
+<link href='/abership/abership.css' rel='stylesheet' type=text/css media='all'>
+</head>
+<body>
+<div id="header"> 
+      <img class="flagl"  src="/St_Piran's_Flag.png" alt="Cornish flag" />
+      <div id = "pagetitle"><h2>Taklow Kernewek</h2>
+        <p class="h3trans"><em>Cornish Things</em></p>
+      </div>
+      <img class="flagr" src="/St_Piran's_Flag.png" alt="Cornish flag" />
+    </div>
+    <nav class="horiz">
+      <ul>
+      <li><a href="/index.html">Home<br><div class="transtext">Tre</div></a></li>
+      <li><a href="/NLPkernewek.html">Cornish NLP<br><div class="transtext">NLP Kernewek</div></a></li>
+      <li><a href="/yethanwerin.html">Yeth an Werin map<br><div class="transtext">Map Yeth an Werin</div></a></li>
+      <li><a href="/minescornwall_test_stjust.html">Mines of Cornwall maps<br><div class="transtext">Mappys Balyow Kernow</div></a></li>
+      <li><a href="/KernowQGIS.html">Maps of Cornwall in Cornish<br><div class="transtext">Mappys Kernow Kernewek</div></a></li>
+      <li><a href="/othermaps.html">Other Map Projects<br><div class="transtext">Mappys Erell</div></a></li>
+      <li><a href="/aboutauthor.html">About me<br><div class="transtext">A-dro dhymm</div></a></li>
+      </ul>
+    </nav>
+    <div id="bodytext">
+  <h2>Aberystwyth Shipping Records.</h2>\n"""
+    htmlint = conv2unicode(htmlint)
+    hfile.write(htmlint)
 
 def printHTMLClose(hfile):
     """ print closing HTML"""
-    hfile.write("</body></html>")
+    hfile.write(conv2unicode("</body></html>"))
     
 def printCrewLists(shipdict, htmlout=""):
     shipnames = [shipdict[s]["Vessel Name"] for s in shipdict]
@@ -202,14 +247,14 @@ def printCrewLists(shipdict, htmlout=""):
         # open file and print intro of HTML file
         hfile = open(htmlout, "w")
         printHTMLIntro(hfile)
-        hfile.write("<h2>Total number of vessels: {n}</h2>".format(n=len(shipnames)))
+        hfile.write(conv2unicode("<h2>Total number of vessels: {n}</h2>".format(n=len(shipnames))))
         
         
     print("Number of vessels = {n}".format(n=len(shipnames)))
     #print(shipdict)
     for s in shipdict:
         if htmlout:
-            hfile.write("<h2>Series {s}. Vessel name: {n}</h2>".format(s=s, n=shipdict[s]["Vessel Name"]))
+            hfile.write(conv2unicode("<h2>Series {s}. Vessel name: {n}</h2>".format(s=s, n=shipdict[s]["Vessel Name"])))
         for i in shipdict[s]:
             #print(i)
             if not(type(i) is int):
@@ -238,13 +283,13 @@ s=s, f=shipdict[s][i][ws]["FileName"], ws=ws))
                           d2="Date Left",
                           pl="Port Left"))
                 if htmlout:
-                    hfile.write("<h3>Series {s}. File name {f}. Sheet {ws}. Ship name: {n}</h3><h4>Ship Registry Number: {n2} Port of registry: {p}</h4>".format(
+                    hfile.write(conv2unicode("<h3>Series {s}. File name {f}. Sheet {ws}. Ship name: {n}</h3><h4>Ship Registry Number: {n2} Port of registry: {p}</h4>".format(
                     n=shipdict[s]["Vessel Name"], n2=shipdict[s]["VesselID"], p=shipdict[s]["Port"],
-s=s, f=shipdict[s][i][ws]["FileName"], ws=ws))
-                    hfile.write("""<table>
+s=s, f=shipdict[s][i][ws]["FileName"], ws=ws)))
+                    hfile.write(conv2unicode("""<table>
                     <tr class='titlerow'><th>Name</th><th>Birth Year</th><th>Age</th>
                     <th>Birthplace</th><th>Date Joined</th><th>Port Joined</th>
-                    <th>Capacity</th><th>Date Left</th><th>Port Left</th></tr>""")
+                    <th>Capacity</th><th>Date Left</th><th>Port Left</th></tr>"""))
                          
                     
 
@@ -254,15 +299,46 @@ s=s, f=shipdict[s][i][ws]["FileName"], ws=ws))
                           y=mar["byear"], a=mar["age"], p=mar["bplace"], d=mar["datejoin"], pj=mar["portjoin"],
 c=mar["capacity"], d2=mar["dateleft"], pl=mar["portleft"]))
                     if htmlout:
-                        hfile.write("<tr><td>{n}</td><td>{y}</td><td>{a}</td><td>{p}</td><td>{d}</td><td>{pj}</td><td>{c}</td><td>{d2}</td><td>{pl}</td></tr>".format(
+                        hfile.write(conv2unicode("<tr><td>{n}</td><td>{y}</td><td>{a}</td><td>{p}</td><td>{d}</td><td>{pj}</td><td>{c}</td><td>{d2}</td><td>{pl}</td></tr>".format(
                         n=mar["name"], y=mar["byear"], a=mar["age"], p=mar["bplace"],
-d=mar["datejoin"], pj=mar["portjoin"], c=mar["capacity"], d2=mar["dateleft"], pl=mar["portleft"]))
+d=mar["datejoin"], pj=mar["portjoin"], c=mar["capacity"], d2=mar["dateleft"], pl=mar["portleft"])))
                 print("\n")
                 print(htmlout, hfile)
                 if htmlout:
-                    hfile.write("</table>\n")
+                    hfile.write(conv2unicode("</table>\n"))
         print("\n")
     if htmlout:
+        printHTMLClose(hfile)
+        hfile.close()
+        
+def writeCrewListsIndivHTML(shipdict):
+    """ write crew lists to HTML one file per vessel """    
+    for s in shipdict:
+        htmlfname = "vessel{n}.html".format(n=str(s).zfill(3))
+        plotfilename = "crewlist_{n}_{v}.png".format(n=str(s).zfill(3), v=shipdict[s]["Vessel Name"].replace(" ","_").replace("&","and"))
+        hfile = io.open(htmlfname, "w", encoding="utf8")
+        printHTMLIntro2(hfile)
+        hfile.write(conv2unicode("<p><a href='../datesallvessels.html'>Back to index of all vessels</a>.</p>\n"))
+        hfile.write(conv2unicode("<h2>Series {s}. Vessel name: {n}</h2>\n".format(s=s, n=shipdict[s]["Vessel Name"])))
+        hfile.write(conv2unicode("<img class='crewdateplot' src='{imgfn}' />\n".format(imgfn=plotfilename)))
+        for i in shipdict[s]:
+            if not(type(i) is int):
+                continue
+            for ws in shipdict[s][i]:
+                crewlist = shipdict[s][i][ws]["Crewlist"]
+                hfile.write(conv2unicode("<h3>Series {s}. File name {f}. Sheet {ws}. Ship name: {n}</h3><h4>Ship Registry Number: {n2} Port of registry: {p}</h4>".format(
+                    n=shipdict[s]["Vessel Name"], n2=shipdict[s]["VesselID"], p=shipdict[s]["Port"],
+s=s, f=shipdict[s][i][ws]["FileName"], ws=ws)))
+                hfile.write(conv2unicode("""<table>
+                    <tr class='titlerow'><th>Name</th><th>Birth Year</th><th>Age</th>
+                    <th>Birthplace</th><th>Date Joined</th><th>Port Joined</th>
+                    <th>Capacity</th><th>Date Left</th><th>Port Left</th></tr>"""))
+                for mar in crewlist:
+                    hfile.write(conv2unicode("<tr><td>{n}</td><td>{y}</td><td>{a}</td><td>{p}</td><td>{d}</td><td>{pj}</td><td>{c}</td><td>{d2}</td><td>{pl}</td></tr>".format(
+                    n=mar["name"], y=mar["byear"], a=mar["age"], p=mar["bplace"],
+d=mar["datejoin"], pj=mar["portjoin"], c=mar["capacity"], d2=mar["dateleft"], pl=mar["portleft"])))
+                hfile.write(conv2unicode("</table>\n"))
+                
         printHTMLClose(hfile)
         hfile.close()
     
@@ -273,7 +349,7 @@ def checkNames(shipdict, htmlout=""):
         # open file and print intro of HTML file
         hfile = open(htmlout, "w")
         printHTMLIntro(hfile)
-        hfile.write("<h2>Total number of vessels: {n}</h2>".format(n=len(shipnames)))
+        hfile.write(conv2unicode("<h2>Total number of vessels: {n}</h2>".format(n=len(shipnames))))
     print("Number of vessels = {n}".format(n=len(shipnames)))
     print("\nVessel names: ")
     for s in shipnames:
@@ -296,7 +372,7 @@ def checkNames(shipdict, htmlout=""):
             print("more than one ship registry number per series")
             print(z[2])
             if htmlout:
-                hfile.write("<p><em>more than one vessel registry number per series</em><br>Numbers found in spreadsheets: {ns}</p>".format(ns=z[2]))
+                hfile.write(conv2unicode("<p><em>more than one vessel registry number per series</em><br>Numbers found in spreadsheets: {ns}</p>".format(ns=z[2])))
     
         for s2, fn, ws in list(zip(z[1], z[3], z[4])):
             try:
@@ -305,8 +381,8 @@ def checkNames(shipdict, htmlout=""):
                 print("ship name conflict")
                 print(z[0], s2)
                 if htmlout:
-                    hfile.write("<p><em>vessel name conflict</em><br>filename: {f} sheet: {ws}<br><strong>First worksheet</strong>: {v1} <strong>Current worksheet</strong>: {v2}</p>".format(
-                    v1=z[0], v2=s2, f=fn, ws=ws))
+                    hfile.write(conv2unicode("<p><em>vessel name conflict</em><br>filename: {f} sheet: {ws}<br><strong>First worksheet</strong>: {v1} <strong>Current worksheet</strong>: {v2}</p>".format(
+                    v1=z[0], v2=s2, f=fn, ws=ws)))
     if htmlout:
         printHTMLClose(hfile)
         hfile.close()                    #time.sleep(5)
@@ -340,7 +416,7 @@ def str2Date(datestr, assumefirstday=True, verbose=False, acceptguesses=False, h
             # don't print error message for "blk" meaning blank
             print("date string that cannot be processed: {d}".format(d=datestr))
             if hfile:
-                hfile.write("<p><em>date string that cannot be processed:</em> {d}</p>".format(d=datestr))
+                hfile.write(conv2unicode("<p><em>date string that cannot be processed:</em> {d}</p>".format(d=datestr)))
         #time.sleep(1)
         if assumefirstday:            
             y, m, d = 1850, 1, 1
@@ -353,8 +429,8 @@ def checkBoundsDate(dt, lbound = 1850, ubound = 1920, verbose=False, hfile=None)
    if dt.year < lbound or dt.year > ubound:
        print("Date {d} falls before {l} or after {u}.".format(d=dt, l=lbound, u=ubound))
        if hfile:
-           hfile.write("<p><em>Date {d} falls before {l} or after {u}</em></p>".format(d=dt,
-                       l=lbound, u=ubound))
+           hfile.write(conv2unicode("<p><em>Date {d} falls before {l} or after {u}</em></p>".format(d=dt,
+                       l=lbound, u=ubound)))
        return False
    else:
        return True
@@ -369,8 +445,8 @@ def findDates(shipdict, verbose=False, htmlout=""):
     for s in shipdict:
         print("\nSeries {s}. Vessel Name, ID: {v} {num}".format(s=s,
               v=shipdict[s]["Vessel Name"], num=shipdict[s]["VesselID"]))
-        hfile.write("<h3>Series {s}. Vessel Name, ID: {v} {num}</h3>".format(s=s,
-              v=shipdict[s]["Vessel Name"], num=shipdict[s]["VesselID"]))
+        hfile.write(conv2unicode("<h3>Series {s}. Vessel Name, ID: {v} {num}</h3>".format(s=s,
+              v=shipdict[s]["Vessel Name"], num=shipdict[s]["VesselID"])))
         earliestdate = datetime.date(1920,1,1)
         latestdate = datetime.date(1850,1,1)
         for i in shipdict[s]:
@@ -380,7 +456,7 @@ def findDates(shipdict, verbose=False, htmlout=""):
                  crewlist = shipdict[s][i][ws]["Crewlist"]
                  print("File {f}. Sheet {ws}".format(f=shipdict[s][i][ws]["FileName"], ws=ws))
                  if htmlout:
-                     hfile.write("<p>filename {f}. sheet {ws}</p>".format(f=shipdict[s][i][ws]["FileName"], ws=ws))
+                     hfile.write(conv2unicode("<p>filename {f}. sheet {ws}</p>".format(f=shipdict[s][i][ws]["FileName"], ws=ws)))
                  for mar in crewlist:
                      if verbose:
                          print("{n}, Dates: {d} {d2}".format(n=mar["name"],
@@ -396,8 +472,8 @@ def findDates(shipdict, verbose=False, htmlout=""):
         print("Vessel Name, ID, Dates: {v}, {num}, {de}, {dl}".format(v=shipdict[s]["Vessel Name"],
               num=shipdict[s]["VesselID"], de=earliestdate, dl=latestdate))
         if htmlout:
-            hfile.write("<p>Vessel Name, ID, Earliest and latest dates:<br>{v}, {num}, {de}, {dl}</p>".format(v=shipdict[s]["Vessel Name"],
-                        num=shipdict[s]["VesselID"], de=earliestdate, dl=latestdate))
+            hfile.write(conv2unicode("<p>Vessel Name, ID, Earliest and latest dates:<br>{v}, {num}, {de}, {dl}</p>".format(v=shipdict[s]["Vessel Name"],
+                        num=shipdict[s]["VesselID"], de=earliestdate, dl=latestdate)))
     if htmlout:
         printHTMLClose(hfile)
         hfile.close()
@@ -418,6 +494,8 @@ if __name__ == '__main__':
                         help="find the earliest start dates and latest leave dates for each vessel")                        
     parser.add_argument("-m", "--html", action="store_true",
                         help="if set, save results to HTML files")
+    parser.add_argument("-i", "--htmlindiv", action="store_true",
+                        help="if set, save crew lists to individual HTML files")
     args = parser.parse_args()
     
     shipdict = getVesselsInfo(verbose=args.verbose)
@@ -435,5 +513,7 @@ if __name__ == '__main__':
         checkNames(shipdict, htmlout=htmlcheckships)
     if args.dates:
         findDates(shipdict, verbose=args.verbose, htmlout=htmlcheckdates)
+    if args.htmlindiv:
+        writeCrewListsIndivHTML(shipdict)
                     
     
